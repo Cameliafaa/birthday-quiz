@@ -200,7 +200,7 @@ function next(){ current++; loadQuestion(); }
 
 function finish(){
   quizBox.innerHTML = `
-    <h1>🎂 Happy Birthday ${answers.nickname || "Sayang"} 🎉</h1>
+    <h1>Happy Birthday ${answers.nickname || "Sayang"}</h1>
     <p>Dilancarkan segala sesuatunya, rezekinya semakin berlimpah, disehatkan badannya, lebih sayang sama keluarga, sayang juga sama aku, wkwk. Semoga dimatamu cuma aku yg menarik. AAMIIN.</p>`;
 
   emailjs.send('service_9iaj9yd', 'template_pytqxuj', {
