@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Birthday Quiz 🎂</title>
+
+<style>
+body { 
+  font-family: Arial, sans-serif; 
+  background: #111; 
+  margin: 0; 
+  padding: 20px; 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  min-height: 100vh;
+}
+.quiz-box { 
+  background: #fff; 
+  color: #000;
+  padding: 20px; 
+  border-radius: 12px; 
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3); 
+  max-width: 500px; 
+  width: 100%;
+  position: relative;
+  text-align: center;
+  overflow: hidden;
+}
+button { 
+  margin: 10px 0; 
+  padding: 12px 20px; 
+  border: none; 
+  border-radius: 8px; 
+  background: #444; 
+  color: white; 
+  cursor: pointer; 
+  font-size: 16px;
+  width: 100%;
+  transition: transform 0.2s, background 0.2s;
+}
+button:hover { background: #666; }
+
+.love-rate { width: 100%; margin: 20px 0; }
+.candle { width: 10px; height: 60px; background: pink; margin: 20px auto; position: relative; }
+.flame { width: 20px; height: 20px; background: orange; border-radius: 50%; position: absolute; top: -25px; left: -5px; animation: flicker 0.3s infinite alternate; }
+@keyframes flicker { from { transform: scale(1); } to { transform: scale(1.2); } }
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed; 
+  z-index: 999; 
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.6);
+  justify-content: center; 
+  align-items: center;
+}
+.modal-content {
+  background: #fff; 
+  padding: 20px; 
+  border-radius: 10px;
+  text-align: center;
+  max-width: 300px;
+}
+.modal-content button { 
+  width: auto; 
+  background: #999; 
+  color:white; 
+}
+.modal-content button:hover { background:#777; }
+
+@media (max-width: 600px) {
+  .quiz-box { padding: 15px; }
+  button { font-size: 14px; padding: 10px; }
+}
+</style>
+
+<!-- EmailJS SDK v4 UMD -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  emailjs.init("ARqfY0Wzo1EzLuDHu"); // ganti dengan public key EmailJS
+</script>
+
+</head>
+<body>
+
+<!-- Start Button -->
+<div class="quiz-box" id="startBox">
+  <h2>Hai Mas Sayang❤️</h2>
+  <p>aku punya beberapa pertanyaan buat kamu, jawab ya!!</p>
+  <button onclick="startQuiz()">Oke sayang</button>
+</div>
+
+<!-- Quiz Box -->
+<div class="quiz-box" id="quiz" style="display:none;">
+  <h2 id="question"></h2>
+  <div id="options"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <p>BUKAN ITU JAWABANNYA!! 🤬🤬</p>
+    <button onclick="closeModal()">Iya sayang</button>
+  </div>
+</div>
+
+<script>
+const startBox = document.getElementById("startBox");
+const quizBox = document.getElementById("quiz");
+const questionEl = document.getElementById("question");
+const optionsEl = document.getElementById("options");
+const modal = document.getElementById("modal");
+
+// forbidden answers
+const forbiddenAnswers = ["camelia", "camelia cantik", "tidak", "ngga"];
+
+const quizData = [
+  { q: "Spill nama panggilan yg paling kamu suka", options: ["Bby", "Sayangkuu", "Mas"], key: "nickname" },
+  { q: "Kalau aku kasih kado, kamu mau apa?", options: ["camelia", "camelia cantik", "camelia cantik pacarmu"], key: "gift" },
+  { q: "Kali ini serius HAHA, kamu mau apa? (sesuai budgetku ya wkwk 😂)", options: ["baju", "jaket"], key: "serious_gift" },
+  { q: "Ukurannya apa?", options: ["M", "L", "XL"], key: "size" },
+  { q: "Tapi kamu serius ulang tahun kan? wkwkw 😂", options: ["iya", "tidak"], key: "birthday_confirm" },
+  { q: "Aku kabulin, tapi jawab pertanyaanku yg satu ini", options: ["let's go"], key: "letsgo" },
+  { q: "Kamu sayang aku ngga? WKWKWKWKWKWK", options: ["sayang", "ngga"], key: "love" },
+  { q: "Rate sayang kamu ke aku bbyyyyyy", slider: true, key: "rate" },
+  { q: "Donee, thank uu mas sudah jawab semua pertanyaanku!!!", options: ["done"], key: "done" },
+  { q: "Eh ketinggalan satu, aku mau tanya wish kamu tahun ini, sokk diisi yaa ganteng...", input: true, key: "wish" }
+];
+
+let current = 0;
+let answers = {};
+
+function startQuiz() {
+  startBox.style.display = "none";
+  quizBox.style.display = "block";
+  loadQuestion();
+}
+
+function loadQuestion() {
+  if(current >= quizData.length) return finish();
+
+  const q = quizData[current];
+  questionEl.innerText = q.q;
+  optionsEl.innerHTML = "";
+
+  if(q.options){
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.innerText = opt;
+
+      btn.onclick = () => {
+        if(forbiddenAnswers.includes(opt.toLowerCase())){
+          showModal(); // tampilkan modal
+        } else {
+          answers[q.key] = opt;
+          next();
+        }
+      };
+
+      optionsEl.appendChild(btn);
+    });
+  } else if(q.slider){
+    const input = document.createElement("input");
+    input.type="range"; input.min=0; input.max=100; input.value=50;
+    input.className="love-rate";
+    optionsEl.appendChild(input);
+
+    const show = document.createElement("div"); show.innerText="50%";
+    optionsEl.appendChild(show);
+
+    input.oninput = () => { show.innerText = input.value + "%"; };
+
+    const btn = document.createElement("button"); 
+    btn.innerText="Next";
+    btn.onclick = () => {
+      answers[q.key] = input.value;
+      next();
+    };
+    optionsEl.appendChild(btn);
+  } else if(q.input){
+    const inp = document.createElement("textarea"); 
+    inp.rows=3; inp.style.width="90%";
+    optionsEl.appendChild(inp);
+
+    const btn = document.createElement("button"); 
+    btn.innerText="Submit";
+    btn.onclick = () => {
+      answers[q.key] = inp.value;
+      finish();
+    };
+    optionsEl.appendChild(btn);
+  }
+}
+
+function next(){ current++; loadQuestion(); }
+
+function finish(){
+  quizBox.innerHTML = `
+    <h1>🎂 Happy Birthday ${answers.nickname || "Sayang"} 🎉</h1>
+    <p>Dilancarkan segala sesuatunya, rezekinya semakin berlimpah, disehatkan badannya, lebih sayang sama keluarga, sayang juga sama aku, wkwk. Semoga dimatamu cuma aku yg menarik. AAMIIN.</p>`;
+
+  emailjs.send('service_9iaj9yd', 'template_pytqxuj', {
+    nickname: answers.nickname || "",
+    gift: answers.gift || "",
+    serious_gift: answers.serious_gift || "",
+    size: answers.size || "",
+    birthday_confirm: answers.birthday_confirm || "",
+    letsgo: answers.letsgo || "",
+    love: answers.love || "",
+    rate: answers.rate ? answers.rate + "%" : "",
+    done: answers.done || "",
+    wish: answers.wish || ""
+  })
+  .then(() => { console.log("Email berhasil dikirim!"); })
+  .catch((err) => { console.error("Email gagal dikirim...", err); });
+}
+
+function showModal(){ modal.style.display = "flex"; }
+function closeModal(){ modal.style.display = "none"; }
+</script>
+
+</body>
+</html>
